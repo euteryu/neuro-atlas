@@ -5,26 +5,33 @@ import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+// --- THIS IS THE FIX ---
+// The "export" keyword here makes this a named export, which is what page.js expects.
 export function EegWave({ position, count = 100, amplitude = 0.2, color = '#00ffff' }) {
   const lineRef = useRef();
 
+  // useMemo ensures this expensive calculation only runs once.
   const points = useMemo(() => {
-    // Create the initial set of points for the line
+    // Create the initial set of points for the line.
     return Array.from({ length: count }, (_, i) => {
       const x = (i / (count - 1)) * 4 - 2; // Spread along x-axis from -2 to 2
       return new THREE.Vector3(x, 0, 0);
     });
   }, [count]);
 
+  // This hook runs on every single frame, driving the animation.
   useFrame(({ clock }) => {
-    // Animate the points in the useFrame loop
+    if (!lineRef.current) return;
+    
     const t = clock.getElapsedTime();
     for (let i = 0; i < count; i++) {
       const x = points[i].x;
-      // A combination of sine waves for a more complex look
+      // A combination of sine waves creates a more complex, organic-looking wave.
       const y = Math.sin(x * 2 + t * 3) * amplitude + Math.sin(x * 3 + t * 2) * amplitude * 0.5;
+      // Update the Y position of each point in the line's geometry.
       lineRef.current.geometry.attributes.position.setY(i, y);
     }
+    // This crucial line tells three.js that the geometry has been updated and needs to be redrawn.
     lineRef.current.geometry.attributes.position.needsUpdate = true;
   });
 
