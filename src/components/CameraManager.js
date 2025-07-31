@@ -1,68 +1,56 @@
 // src/components/CameraManager.js
 'use client';
 
-import { useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
+import { useSpring, animated } from '@react-spring/three';
 import * as THREE from 'three';
-import TWEEN from '@tweenjs/tween.js';
+import { useNeuroStore } from '@/stores/useNeuroStore'; // Import our new store
 
-// --- FIX: Tighter, more controlled camera positions ---
-const GALAXY_VIEW_POSITION = new THREE.Vector3(0, 0, 15);
-const HUB_VIEW_POSITION = new THREE.Vector3(0, 2, 20); // Much closer "Orrery" view
-const MAX_HUB_DISTANCE = 30; // The absolute "wall" of the universe
-const GALAXY_SWITCH_TRIGGER_DISTANCE = 25;
-// ----------------------------------------------------
+// Constants for our camera views
+const GALAXY_VIEW_PROPS = { pos: [0, 0, 15], target: [0, 0, 0] };
+const HUB_VIEW_PROPS = { pos: [0, 2, 20], target: [0, 0, 0] };
+const MAX_HUB_DISTANCE = 30;
 
-export function CameraManager({ view, setView, onCameraUpdate, onWarpStart, onWarpEnd }) {
+export function CameraManager() {
   const { camera, controls } = useThree();
+  // Get state and actions directly from the Zustand store
+  const { view, returnToHub, setCameraInfo, setIsWarping } = useNeuroStore();
+
+  // --- NEW ARCHITECTURE: Driving animations with a spring ---
+  const [{ cameraPos, cameraTarget }] = useSpring(() => {
+    const props = view.mode === 'galaxy' ? GALAXY_VIEW_PROPS : HUB_VIEW_PROPS;
+    return {
+      cameraPos: props.pos,
+      cameraTarget: props.target,
+      config: { mass: 1, tension: 170, friction: 26 },
+      onRest: () => setIsWarping(false), // Turn off warp effect when animation finishes
+    };
+  }, [view]);
+  // -----------------------------------------------------------
 
   useFrame(() => {
-    TWEEN.update();
     if (!controls) return;
+
+    // Animate the camera and target on every frame using the spring's values
+    camera.position.set(...cameraPos.get());
+    controls.target.set(...cameraTarget.get());
+    controls.update();
+
+    // Continuously report camera info for the minimap
     const direction = new THREE.Vector3();
     camera.getWorldDirection(direction);
-    onCameraUpdate({ position: camera.position, direction });
-    const distance = controls.getDistance();
-    if (view.mode === 'galaxy' && distance > GALAXY_SWITCH_TRIGGER_DISTANCE) {
-      setView({ mode: 'hub' });
+    setCameraInfo({ position: camera.position, direction });
+    
+    // Automatically return to hub if zoomed out too far
+    if (view.mode === 'galaxy' && controls.getDistance() > MAX_HUB_DISTANCE) {
+      returnToHub();
     }
   });
-  
-  useEffect(() => {
-    if (!controls) return;
-    
-    let targetPosition, targetLookAt;
-    
-    if (view.mode === 'galaxy') {
-      targetPosition = GALAXY_VIEW_POSITION;
-      targetLookAt = new THREE.Vector3(0, 0, 0);
-      controls.maxDistance = GALAXY_SWITCH_TRIGGER_DISTANCE;
-    } else { // hub mode
-      targetPosition = HUB_VIEW_POSITION;
-      targetLookAt = new THREE.Vector3(0, 0, 0);
-      controls.maxDistance = MAX_HUB_DISTANCE;
-    }
-    
-    // --- FIX: Prevent animation fighting by stopping previous tweens ---
-    TWEEN.removeAll();
-    onWarpStart();
-    // --------------------------------------------------------------------
 
-    new TWEEN.Tween(camera.position)
-      .to(targetPosition, 1000)
-      .easing(TWEEN.Easing.Quartic.Out)
-      .start();
-      
-    new TWEEN.Tween(controls.target)
-      .to(targetLookAt, 1000)
-      .easing(TWEEN.Easing.Quartic.Out)
-      .onComplete(() => {
-          // This ensures the warp ends cleanly and gives control back
-          onWarpEnd();
-      })
-      .start();
-      
-  }, [view, controls, onWarpStart, onWarpEnd, setView]);
+  // Set the hard limit for zooming out in hub view
+  if (controls) {
+    controls.maxDistance = view.mode === 'hub' ? MAX_HUB_DISTANCE : MAX_HUB_DISTANCE + 5;
+  }
 
   return null;
 }

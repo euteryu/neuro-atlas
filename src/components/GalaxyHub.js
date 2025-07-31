@@ -4,54 +4,55 @@
 import React, { Suspense } from 'react';
 import { Html, Stars, Text } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { galaxies } from '@/content/galaxies-data'; // Import the master map of the universe
 
-// We define and export this data so the minimap can use it.
-export const galaxyData = [
-  { id: 'brain', position: [-8, 0, 0], color: '#00ffff' },
-  { id: 'stats', position: [8, 2, -2], color: '#ff00ff' },
-];
-
+// This component renders the meta-view of all available knowledge galaxies.
+// It is designed to be a clean, dark space with no central light source.
 export function GalaxyHub({ onGalaxySelect }) {
   return (
     <Suspense fallback={<Html><div>Loading Neuro-Verse...</div></Html>}>
+      {/* A dark, ambient starfield for the hub view */}
       <Stars radius={300} depth={100} count={5000} factor={10} saturation={1} fade speed={1} />
-      <ambientLight intensity={0.2} />
-      <pointLight position={[0, 0, 0]} intensity={1.5} color="#ffffff" />
       
-      {/* A temporary helper to show you the center of the universe [X=red, Y=green, Z=blue] */}
-      <axesHelper args={[5]} />
-
-      {/* The Brain Galaxy representation */}
-      <group position={[-8, 0, 0]}>
-        <mesh 
-          onClick={() => onGalaxySelect('brain')}
-          onPointerEnter={(e) => (e.object.scale.set(1.2, 1.2, 1.2))}
-          onPointerLeave={(e) => (e.object.scale.set(1, 1, 1))}
-        >
-          <sphereGeometry args={[2, 32, 32]} />
-          <meshStandardMaterial color="#00ffff" emissive="#00ffff" emissiveIntensity={0.5} />
-        </mesh>
-        <Text position={[0, -3.5, 0]} fontSize={1.2} color="white" anchorX="center" anchorY="middle">
-          The Brain Quadrant
-        </Text>
-      </group>
+      {/* 
+        The only light source is a faint ambient light. This prevents pure blackness
+        but ensures there is no central "sun". The primary light will come from
+        the glowing galaxy spheres themselves.
+      */}
+      <ambientLight intensity={0.4} />
       
-      {/* The Statistics Galaxy representation */}
-      <group position={[8, 2, -2]}>
-        <mesh 
-          onClick={() => onGalaxySelect('stats')}
-          onPointerEnter={(e) => (e.object.scale.set(1.2, 1.2, 1.2))}
-          onPointerLeave={(e) => (e.object.scale.set(1, 1, 1))}
-        >
-          <sphereGeometry args={[1.5, 32, 32]} />
-          <meshStandardMaterial color="#ff00ff" emissive="#ff00ff" emissiveIntensity={0.5} />
-        </mesh>
-        <Text position={[0, -3, 0]} fontSize={1.2} color="white" anchorX="center" anchorY="middle">
-          The Quantitative Cosmos
-        </Text>
-      </group>
-      {/* ------------------------------- */}
+      {/* 
+        We dynamically render the galaxy markers by reading from our
+        single source of truth: the galaxies-data.js file.
+        This is a highly scalable pattern.
+      */}
+      {galaxies.map(galaxy => (
+        <group key={galaxy.id} position={galaxy.position}>
+          <mesh 
+            onClick={() => onGalaxySelect(galaxy.id)}
+            onPointerEnter={(e) => (e.object.scale.set(1.2, 1.2, 1.2))}
+            onPointerLeave={(e) => (e.object.scale.set(1, 1, 1))}
+          >
+            <sphereGeometry args={[2, 32, 32]} />
+            <meshStandardMaterial 
+              color={galaxy.color} 
+              emissive={galaxy.color} 
+              emissiveIntensity={0.5} 
+            />
+          </mesh>
+          <Text 
+            position={[0, -3.5, 0]} 
+            fontSize={1.2} 
+            color="white" 
+            anchorX="center" 
+            anchorY="middle"
+          >
+            {galaxy.name}
+          </Text>
+        </group>
+      ))}
 
+      {/* The post-processing adds the cinematic glow to the scene */}
       <EffectComposer>
         <Bloom intensity={0.8} luminanceThreshold={0.2} />
       </EffectComposer>
