@@ -1,18 +1,55 @@
 // src/components/StatsGalaxy.js
 'use client';
 
-import React, { Suspense } from 'react';
-import { Html, Text, TorusKnot } from '@react-three/drei';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNeuroStore } from '@/stores/useNeuroStore';
+import { WarpTunnel } from './WarpTunnel';
+import { InformationObject } from './InformationObject';
+// --- NEW: Import post-processing for the dedicated bloom effect ---
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 export function StatsGalaxy() {
+  const [objects, setObjects] = useState([]);
+  const { setActiveModal, activeModal, view } = useNeuroStore();
+  const isPaused = activeModal !== null;
+
+  const handleReachEnd = useCallback((id) => setObjects(prev => prev.filter(obj => obj.id !== id)), []);
+  const handleObjectClick = useCallback(() => setActiveModal('stats_calculator'), [setActiveModal]);
+  
+  useEffect(() => {
+    let intervalId = null;
+    if (view.id === 'stats' && view.mode === 'galaxy') {
+      const spawnObject = () => {
+        if (document.hidden || isPaused) return;
+        const newObject = {
+          id: Math.random().toString(36).substr(2, 9),
+          position: [(Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, -100]
+        };
+        setObjects(prev => [...prev, newObject]);
+      };
+      intervalId = setInterval(spawnObject, 4000);
+    }
+    return () => { if (intervalId) clearInterval(intervalId); };
+  }, [view, isPaused]);
+
   return (
-    <Suspense fallback={<Html><div>Loading Quadrant...</div></Html>}>
-        {/* LIGHTS AND STARS ARE REMOVED FROM HERE */}
-        <TorusKnot args={[5, 1.5, 200, 32]} position={[0, 0, 0]}>
-            <meshStandardMaterial color="#ffffff" roughness={0.1} metalness={0.9} />
-        </TorusKnot>
-        <Text position={[0, 0, -10]} fontSize={2} color="white">T-Test Planet (WIP)</Text>
-        <Text position={[10, 0, 0]} fontSize={2} color="white">ANOVA Planet (WIP)</Text>
-    </Suspense>
+    <>
+      <WarpTunnel isPaused={isPaused} />
+      {objects.map(obj => (
+        <InformationObject
+          key={obj.id} id={obj.id} initialPosition={obj.position}
+          onReachEnd={handleReachEnd} onObjectClick={handleObjectClick}
+          isPaused={isPaused}
+        />
+      ))}
+      {/* --- NEW: Add a powerful, dedicated Bloom effect ONLY for this galaxy --- */}
+      <EffectComposer>
+        <Bloom 
+          intensity={1.5} // Much stronger bloom
+          luminanceThreshold={0.3} // Affects more pixels
+          luminanceSmoothing={0.9} 
+        />
+      </EffectComposer>
+    </>
   );
 }

@@ -1,0 +1,63 @@
+/* src/styles/StatsCalculatorModal.css */
+
+.stats-modal-container {
+  /* The complex, angular shape */
+  clip-path: polygon(0% 0%, 100% 0%, 100% calc(100% - 40px), calc(100% - 40px) 100%, 0% 100%);
+}
+
+.stats-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr auto;
+  gap: 2rem;
+  height: 100%;
+}
+
+.modal-header { grid-column: 1 / 3; }
+.modal-inputs { grid-column: 1 / 2; }
+.modal-params { grid-column: 2 / 3; }
+.modal-footer { grid-column: 1 / 3; }
+
+.modal-widget {
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  position: relative;
+  /* Faint background grid for sci-fi feel */
+  background-image: 
+    linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Custom styling for the range slider to look futuristic */
+.futuristic-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 255, 255, 0.2);
+  outline: none;
+  border-radius: 2px;
+}
+
+.futuristic-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #00ffff;
+  cursor: pointer;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00ffff;
+}
+
+.futuristic-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #00ffff;
+  cursor: pointer;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00ffff;
+}

@@ -3,7 +3,8 @@
 
 import React from 'react';
 import { galaxies } from '@/content/galaxies-data';
-import { useNeuroStore } from '@/stores/useNeuroStore'; // Import our store
+// --- FIX: Import the 'useNeuroStore' hook to access global state and actions ---
+import { useNeuroStore } from '@/stores/useNeuroStore';
 
 const mapToMinimap = (position, mapSize, mapScale) => {
   const x = (position.x / mapScale) * (mapSize / 2) + (mapSize / 2);
@@ -11,9 +12,10 @@ const mapToMinimap = (position, mapSize, mapScale) => {
   return { x, z };
 };
 
+// The component no longer needs props. It's fully self-sufficient.
 export function Minimap() {
-  // Get all required data and actions directly from the store
-  const { cameraInfo, view, jumpToGalaxy } = useNeuroStore();
+  // --- FIX: Get all required data and actions directly from the store ---
+  const { cameraInfo, view, jumpTo } = useNeuroStore();
 
   const MAP_SIZE = 200;
   const MAP_SCALE = 15;
@@ -52,7 +54,8 @@ export function Minimap() {
         <circle cx={MAP_SIZE/2} cy={MAP_SIZE/2} r={MAP_SIZE/2 - 2} fill="none" stroke="rgba(0, 255, 255, 0.2)" />
         
         {galaxyDots.map(dot => (
-          <g key={dot.id} onClick={() => jumpToGalaxy(dot.id)} className="cursor-pointer">
+          // --- FIX: The onClick now calls the 'jumpTo' action from the store ---
+          <g key={dot.id} onClick={() => jumpTo({ mode: 'galaxy', id: dot.id })} className="cursor-pointer">
             <circle cx={dot.x} cy={dot.z} r="8" fill={dot.color} fillOpacity="0.2" />
             <circle cx={dot.x} cy={dot.z} r="4" fill={dot.color} />
           </g>
